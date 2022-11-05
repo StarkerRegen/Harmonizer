@@ -70,7 +70,7 @@ if __name__ == '__main__':
     harmonizer = model.Harmonizer()
     if cuda:
         harmonizer = harmonizer.cuda()
-    harmonizer.load_state_dict(torch.load(args.pretrained), strict=True)
+    harmonizer.load_state_dict(torch.load(args.pretrained, map_location=torch.device('cpu')), strict=True)
     harmonizer.eval()
 
     examples = os.listdir(os.path.join(args.example_path, 'foreground'))

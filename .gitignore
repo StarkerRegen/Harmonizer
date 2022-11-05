@@ -99,3 +99,8 @@ ENV/
 
 # Project files
 .vscode
+
+.DS_Store
+**/.DS_Store
+.DS_Store?
+*/__pycache__
