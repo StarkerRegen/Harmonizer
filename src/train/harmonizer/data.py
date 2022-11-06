@@ -21,6 +21,10 @@ def original_iharmony4():
     return OriginalIHarmony4
 
 
+def hyoutube():
+    return HYouTube
+
+
 def resize(img, size):
     interp = cv2.INTER_LINEAR
 
@@ -59,7 +63,7 @@ class HarmonizerIHarmony4(torchtask.data_template.TaskDataset):
     def __getitem__(self, idx):
         image_path = os.path.join(self.im_dir, self.sample_list[idx])
         mask_path = os.path.join(self.mask_dir, self.sample_list[idx])
-        
+
         image = self.im_loader.load(image_path)
         mask = self.im_loader.load(mask_path)
 
@@ -83,15 +87,15 @@ class HarmonizerIHarmony4(torchtask.data_template.TaskDataset):
             image = np.repeat(image, 3, axis=2)
         elif image.shape[2] == 4:
             image = image[:, :, 0:3]
-        
+
         # random rotate
         rerotation = 0
         if self.rotation and random.randint(0, 1) == 0:
             rotate_num = random.randint(1, 3)
             rerotation = 4 - rotate_num
             image = np.rot90(image, k=rotate_num).copy()
-            mask =  np.rot90(mask, k=rotate_num).copy()
-        
+            mask = np.rot90(mask, k=rotate_num).copy()
+
         # random flip
         if self.fliplr and (random.randint(0, 1) == 0):
             image = np.fliplr(image).copy()
@@ -106,7 +110,7 @@ class HarmonizerIHarmony4(torchtask.data_template.TaskDataset):
         mask = mask[None, :, :]
         adjusted = image.numpy() * -1
 
-        return (adjusted, mask), (image, )
+        return (adjusted, mask), (image,)
 
 
 class OriginalIHarmony4(torchtask.data_template.TaskDataset):
@@ -124,7 +128,7 @@ class OriginalIHarmony4(torchtask.data_template.TaskDataset):
 
         self.rotation = True if self.is_train else False
         self.fliplr = True if self.is_train else False
-    
+
     def __getitem__(self, idx):
         sname = self.sample_list[idx]
         adjusted_path = os.path.join(self.adjusted_dir, sname)
@@ -141,7 +145,6 @@ class OriginalIHarmony4(torchtask.data_template.TaskDataset):
         mask = self.im_loader.load(mask_path)
 
         width, height = image.size
-
 
         # resize to self.im_size
         adjusted = resize(adjusted, (self.im_size, self.im_size))
@@ -178,8 +181,8 @@ class OriginalIHarmony4(torchtask.data_template.TaskDataset):
             rerotation = 4 - rotate_num
             adjusted = np.rot90(adjusted, k=rotate_num).copy()
             image = np.rot90(image, k=rotate_num).copy()
-            mask =  np.rot90(mask, k=rotate_num).copy()
-        
+            mask = np.rot90(mask, k=rotate_num).copy()
+
         # random flip
         if self.fliplr and (random.randint(0, 1) == 0):
             adjusted = np.fliplr(adjusted).copy()
@@ -195,4 +198,110 @@ class OriginalIHarmony4(torchtask.data_template.TaskDataset):
 
         mask = mask[None, :, :]
 
-        return (adjusted, mask), (image, )
+        return (adjusted, mask), (image,)
+
+
+class HYouTube(torchtask.data_template.TaskDataset):
+    def __init__(self, args, is_train):
+        super(HYouTube, self).__init__(args, is_train)
+
+        sample_names = []
+        with open(self.root_dir, 'r') as f:
+            sample_names = [_.strip() for _ in f.readlines()]
+
+        data_dir = '../../../../autodl-tmp'
+        comp_list = []
+        mask_list = []
+        real_list = []
+        for line in sample_names:
+            dirs = line.split(' ')
+            comp_dir = os.path.join(data_dir, dirs[2])
+            mask_dir = os.path.join(data_dir, dirs[1])
+            real_dir = os.path.join(data_dir, dirs[0])
+
+            comp_names = os.listdir(comp_dir)
+            for comp_name in comp_names:
+                mask_name = comp_name.replace('jpg', 'png')
+                comp_list.append(os.path.join(comp_dir, comp_name))
+                mask_list.append(os.path.join(mask_dir, mask_name))
+                real_list.append(os.path.join(real_dir, comp_name))
+
+        self.comp_list = comp_list
+        self.mask_list = mask_list
+        self.real_list = real_list
+
+        self.sample_list = comp_list
+        self.idxs = [_ for _ in range(0, len(self.comp_list))]
+
+        self.im_size = self.args.im_size
+
+        self.rotation = True if self.is_train else False
+        self.fliplr = True if self.is_train else False
+
+    def __getitem__(self, idx):
+        adjusted_path = self.comp_list[idx]
+        image_path = self.real_list[idx]
+        mask_path = self.mask_list[idx]
+
+        if not os.path.exists(image_path):
+            print("file does not exist")
+
+        adjusted = self.im_loader.load(adjusted_path)
+        image = self.im_loader.load(image_path)
+        mask = self.im_loader.load(mask_path)
+
+        width, height = image.size
+
+        # resize to self.im_size
+        adjusted = resize(adjusted, (self.im_size, self.im_size))
+        image = resize(image, (self.im_size, self.im_size))
+        mask = resize(mask, (self.im_size, self.im_size))
+
+        # convert to np array and scale to [0, 1]
+        adjusted = np.array(adjusted).astype('float32') / 255.0
+        image = np.array(image).astype('float32') / 255.0
+        mask = np.array(mask).astype('float32') / 255.0
+
+        # check image shape
+        if len(mask.shape) == 3:
+            mask = mask[:, :, -1]
+
+        if len(image.shape) == 2:
+            image = image[:, :, None]
+        if image.shape[2] == 1:
+            image = np.repeat(image, 3, axis=2)
+        elif image.shape[2] == 4:
+            image = image[:, :, 0:3]
+
+        if len(adjusted.shape) == 2:
+            adjusted = adjusted[:, :, None]
+        if adjusted.shape[2] == 1:
+            adjusted = np.repeat(adjusted, 3, axis=2)
+        elif adjusted.shape[2] == 4:
+            adjusted = adjusted[:, :, 0:3]
+
+        # random rotate
+        rerotation = 0
+        if self.rotation and random.randint(0, 1) == 0:
+            rotate_num = random.randint(1, 3)
+            rerotation = 4 - rotate_num
+            adjusted = np.rot90(adjusted, k=rotate_num).copy()
+            image = np.rot90(image, k=rotate_num).copy()
+            mask = np.rot90(mask, k=rotate_num).copy()
+
+        # random flip
+        if self.fliplr and (random.randint(0, 1) == 0):
+            adjusted = np.fliplr(adjusted).copy()
+            image = np.fliplr(image).copy()
+            mask = np.fliplr(mask).copy()
+
+        adjusted = Image.fromarray((adjusted * 255.0).astype('uint8'))
+        image = Image.fromarray((image * 255.0).astype('uint8'))
+
+        # NOTE: do not add random color adjustement here
+        adjusted = im_val_transform(adjusted)
+        image = im_val_transform(image)
+
+        mask = mask[None, :, :]
+
+        return (adjusted, mask), (image,)

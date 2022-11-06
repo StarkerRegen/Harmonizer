@@ -2,7 +2,6 @@ import os
 import sys
 import collections
 
-
 sys.path.append('..')
 import torchtask
 
@@ -20,9 +19,9 @@ config = collections.OrderedDict(
         # arguments - exp
         ('resume', ''),
         ('validation', False),
-        
+
         ('out_path', 'result'),
-        
+
         ('visualize', False),
         ('debug', False),
 
@@ -37,27 +36,36 @@ config = collections.OrderedDict(
         ('ignore_additional', False),
 
         ('trainset', {
-            'harmonizer_iharmony4': [
-                './dataset/iHarmony4/HAdobe5k/train',
-                './dataset/iHarmony4/HCOCO/train',
-                './dataset/iHarmony4/Hday2night/train',
-                './dataset/iHarmony4/HFlickr/train',
+            # 'harmonizer_iharmony4': [
+            #     './dataset/iHarmony4/HAdobe5k/train',
+            #     './dataset/iHarmony4/HCOCO/train',
+            #     './dataset/iHarmony4/Hday2night/train',
+            #     './dataset/iHarmony4/HFlickr/train',
+            # ]
+            'hyoutube': [
+                '../../../../autodl-tmp/train_list.txt'
             ]
         }),
         ('additionalset', {
-            'original_iharmony4': [
-                './dataset/iHarmony4/HAdobe5k/train',
-                './dataset/iHarmony4/HCOCO/train',
-                './dataset/iHarmony4/Hday2night/train',
-                './dataset/iHarmony4/HFlickr/train',
-            ],
+            # 'original_iharmony4': [
+            #     './dataset/iHarmony4/HAdobe5k/train',
+            #     './dataset/iHarmony4/HCOCO/train',
+            #     './dataset/iHarmony4/Hday2night/train',
+            #     './dataset/iHarmony4/HFlickr/train',
+            # ],
+            'hyoutube': [
+                '../../../../autodl-tmp/train_list.txt'
+            ]
         }),
         ('valset', {
-            'original_iharmony4': [
-                './dataset/iHarmony4/HAdobe5k/test',
-                './dataset/iHarmony4/HCOCO/test',
-                './dataset/iHarmony4/Hday2night/test',
-                './dataset/iHarmony4/HFlickr/test',
+            # 'original_iharmony4': [
+            #     './dataset/iHarmony4/HAdobe5k/test',
+            #     './dataset/iHarmony4/HCOCO/test',
+            #     './dataset/iHarmony4/Hday2night/test',
+            #     './dataset/iHarmony4/HFlickr/test',
+            # ]
+            'hyoutube': [
+                '../../../../autodl-tmp/test_list.txt'
             ]
         }),
 
@@ -79,7 +87,6 @@ config = collections.OrderedDict(
         ('additional_batch_size', 8),
     ]
 )
-
 
 if __name__ == '__main__':
     torchtask.run_script(config, proxy, proxy.HarmonizerProxy)
