@@ -43,6 +43,35 @@ def load_iHarmony4_subset(dataset_dir, mode):
     return samples
 
 
+def load_HYouTube(dataset_dir, mode):
+    if not mode in ['train', 'test']:
+        print('Invalid mode: {0} for the dataset: {1}'.format(mode, dataset_dir))
+        exit()
+
+    sample_names = []
+    with open(os.path.join(dataset_dir, '{0}_{1}.txt'.format(mode, 'list')), 'r') as f:
+        sample_names = [_.strip() for _ in f.readlines()]
+
+    samples = []
+    for line in sample_names:
+        dirs = line.split(' ')
+        comp_dir = os.path.join(dataset_dir, dirs[2])
+        mask_dir = os.path.join(dataset_dir, dirs[1])
+        real_dir = os.path.join(dataset_dir, dirs[0])
+
+        comp_names = os.listdir(comp_dir)
+        for comp_name in comp_names:
+            mask_name = comp_name.replace('jpg', 'png')
+            sample = {
+                'comp': os.path.join(comp_dir, comp_name),
+                'mask': os.path.join(mask_dir, mask_name),
+                'real': os.path.join(real_dir, comp_name),
+            }
+            samples.append(sample)
+
+    return samples
+
+
 def calc_metrics(pred, gt, mask):
     n, c, h, w = pred.shape
     assert n == 1
@@ -59,14 +88,14 @@ def calc_metrics(pred, gt, mask):
     mse = skimage.metrics.mean_squared_error(pred, gt)
     fmse = skimage.metrics.mean_squared_error(pred * mask, gt * mask) * total_pixels / fg_pixels
     psnr = skimage.metrics.peak_signal_noise_ratio(pred, gt, data_range=pred.max() - pred.min())
-    ssim = skimage.metrics.structural_similarity(pred, gt, multichannel=True)
+    ssim = skimage.metrics.structural_similarity(pred, gt, channel_axis=-1)
 
     return mse, fmse, psnr, ssim
 
 
 if __name__ == '__main__':
     # check dataset dir
-    DATASET_DIR = './dataset'
+    DATASET_DIR = '../autodl-tmp'
     if not os.path.exists(DATASET_DIR):
         print('Cannot find the dataset dir')
         exit()
@@ -77,6 +106,7 @@ if __name__ == '__main__':
         'HFlickr': os.path.join(DATASET_DIR, 'harmonization/iHarmony4/HFlickr'),
         'HAdobe5k': os.path.join(DATASET_DIR, 'harmonization/iHarmony4/HAdobe5k'),
         'Hday2night': os.path.join(DATASET_DIR, 'harmonization/iHarmony4/Hday2night'),
+        'HYouTube': '../autodl-tmp',
     }
 
     # define cmd arguments
@@ -107,7 +137,8 @@ if __name__ == '__main__':
     # load validation datasets
     datasets = {}
     for d in args.datasets:
-        datasets[d] = load_iHarmony4_subset(DATASETS[d], 'test')
+        # datasets[d] = load_iHarmony4_subset(DATASETS[d], 'test')
+        datasets[d] = load_HYouTube(DATASET_DIR, 'test')
 
     # validation
     metrics = {}
@@ -150,17 +181,18 @@ if __name__ == '__main__':
 
             # calculate metrics
             mse, fmse, psnr, ssim = calc_metrics(_harmonized, _image, _mask)
-            
+
             metric['MSE'] += mse
             metric['fMSE'] += fmse
             metric['PSNR'] += psnr
             metric['SSIM'] += ssim
             pbar.set_description('MSE: {0:.4f}   fMSE: {1:.4f}   PSNR: {2:.4f}   SSIM: {3:.4f}'.format(
-                metric['MSE']/(i+1), metric['fMSE']/(i+1), metric['PSNR']/(i+1), metric['SSIM']/(i+1)))
-        
+                metric['MSE'] / (i + 1), metric['fMSE'] / (i + 1), metric['PSNR'] / (i + 1), metric['SSIM'] / (i + 1)))
+
         print('--------------------------------------------------------------------------------')
         print('{0} - MSE: {1:.4f}   fMSE: {2:.4f}   PSNR: {3:.4f}   SSIM: {4:.4f}'.format(
-            dkey, metric['MSE']/sample_num, metric['fMSE']/sample_num, metric['PSNR']/sample_num, metric['SSIM']/sample_num))
+            dkey, metric['MSE'] / sample_num, metric['fMSE'] / sample_num, metric['PSNR'] / sample_num,
+                  metric['SSIM'] / sample_num))
         print('================================================================================')
 
         metrics[dkey] = metric
