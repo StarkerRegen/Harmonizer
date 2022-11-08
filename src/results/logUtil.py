@@ -26,4 +26,4 @@ def log_util(read_file, write_file):
 
 
 if __name__ == '__main__':
-    log_util('train_1.txt', 'train_1_result.txt')
+    log_util('tmp/train_1.txt', 'tmp/train_1_result.txt')
