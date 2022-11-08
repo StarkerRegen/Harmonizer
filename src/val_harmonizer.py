@@ -4,6 +4,7 @@ import argparse
 import numpy as np
 from tqdm import tqdm
 from PIL import Image
+from collections import OrderedDict
 
 import torch
 import torch.nn.functional as F
@@ -131,7 +132,12 @@ if __name__ == '__main__':
     harmonizer = model.Harmonizer()
     if cuda:
         harmonizer = harmonizer.cuda()
-    harmonizer.load_state_dict(torch.load(args.pretrained), strict=True)
+    ckpt = torch.load(args.pretrained, map_location=torch.device('cpu'))
+    new_state_dict = OrderedDict()
+    for k, v in ckpt['model'].items():
+        name = k[13:]  # remove module.model.
+        new_state_dict[name] = v
+    harmonizer.load_state_dict(new_state_dict, strict=True)
     harmonizer.eval()
 
     # load validation datasets
