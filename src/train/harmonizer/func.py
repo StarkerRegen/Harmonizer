@@ -5,6 +5,8 @@ import skimage
 
 import torchtask
 
+import lpips
+
 def task_func():
     return HarmonizationFunc
 
@@ -12,6 +14,7 @@ def task_func():
 class HarmonizationFunc(torchtask.func_template.TaskFunc):
     def __init__(self, args):
         super(HarmonizationFunc, self).__init__(args)
+        self.loss_fn = lpips.LPIPS(net='alex')
 
     def metrics(self, pred_image, gt_image, mask, meters, id_str=''):
         n, c, h, w = pred_image.shape
@@ -39,3 +42,6 @@ class HarmonizationFunc(torchtask.func_template.TaskFunc):
         
         batch_ssim = skimage.metrics.structural_similarity(pred_image, gt_image, multichannel=True)
         meters.update('{0}_{1}_ssim'.format(id_str, self.METRIC_STR), batch_ssim)
+
+        batch_lpips = self.loss_fn.forward(pred_image, gt_image)
+        meters.update('{0}_{1}_lipips'.format(id_str, self.METRIC_STR), batch_lpips)

@@ -63,7 +63,7 @@ class HarmonizerTrainer(torchtask.trainer_template.TaskTrainer):
             inp, gt = self._batch_prehandle(inp, gt, True)
             x, mask = inp
 
-            # forword the model
+            # forward the model
             self.optimizer.zero_grad()
             resulter, debugger = self.model(inp)
 

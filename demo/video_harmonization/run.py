@@ -1,4 +1,6 @@
+from collections import OrderedDict
 import os
+import time
 import cv2
 import argparse
 import numpy as np
@@ -35,6 +37,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--example-path', type=str, required=True, help='')
     parser.add_argument('--pretrained', type=str, default='./pretrained/harmonizer.pth', help='')
+    # parser.add_argument('--trained', type=str, default='./trained/checkpoint_60.ckpt', help='')
     args = parser.parse_known_args()[0]
 
     print('\n')
@@ -43,6 +46,7 @@ if __name__ == '__main__':
     print('--------------------------------------------------------------------------------')
     print('  - Example Path: {0}'.format(args.example_path))
     print('  - Pretrained Model: {0}'.format(args.pretrained))
+    # print('- Trained Model: {0}'.format(args.trained))
     print('================================================================================')
     print('\n')
 
@@ -61,21 +65,32 @@ if __name__ == '__main__':
     print('The harmonized videos will be saved in: {0}\n'.format(os.path.join(args.example_path, 'harmonized')))
 
     # pre-defined arguments
-    fps = 25
+    fps = 30
     ema = 1 - 1 / fps
     cuda = torch.cuda.is_available()
 
     # create/load the harmonizer model
     print('Create/load Harmonizer...\n')
+    time_start = time.time()
     harmonizer = model.Harmonizer()
     if cuda:
         harmonizer = harmonizer.cuda()
-    harmonizer.load_state_dict(torch.load(args.pretrained, map_location=torch.device('cpu')), strict=True)
+    ckpt = torch.load(args.pretrained, map_location=torch.device('cpu'))
+    new_state_dict = OrderedDict()
+    for k, v in ckpt['model'].items():
+        name = k[13:]  # remove module.model.
+        new_state_dict[name] = v
+    harmonizer.load_state_dict(new_state_dict, strict=True)
     harmonizer.eval()
+    time_end = time.time()
+    print("load model duration: ", time_end - time_start)
 
+    time_start = time.time()
     examples = os.listdir(os.path.join(args.example_path, 'foreground'))
     for vdx, example in enumerate(examples):
         print('Process video: {0}...'.format(example))
+        if(example == '.DS_Store'):
+            continue
         
         # define example path
         mask_video_path = os.path.join(args.example_path, 'mask', example)
@@ -142,6 +157,9 @@ if __name__ == '__main__':
         harmonized_vw.release()
 
         print('\n')
-
+    time_end = time.time()
+    duration = time_end - time_start
     print('Finished.')
     print('\n')
+    print("compute duration: ", duration)
+    print("FPS: ", len(fg_frames) / duration)

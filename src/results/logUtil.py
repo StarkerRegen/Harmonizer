@@ -16,14 +16,13 @@ def log_util(read_file, write_file):
             arr = re.sub(r'[^0-9\.]', ' ', line).split(' ')
             arr = ' '.join(arr).split()
             output.append(arr)
-    print(epoch)
 
-    # with open(write_file, 'w') as f:
-    #     for line in output:
-    #         f.writelines(' '.join(line))
-    #         f.writelines('\n')
-    #     f.close()
+    with open(write_file, 'w') as f:
+        for line in output:
+            f.writelines(' '.join(line))
+            f.writelines('\n')
+        f.close()
 
 
 if __name__ == '__main__':
-    log_util('tmp/train_1.txt', 'tmp/train_1_result.txt')
+    log_util('./tmp/train_1.txt', './tmp/train_1_result.txt')

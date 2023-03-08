@@ -298,7 +298,7 @@ class HYouTube(torchtask.data_template.TaskDataset):
         adjusted = Image.fromarray((adjusted * 255.0).astype('uint8'))
         image = Image.fromarray((image * 255.0).astype('uint8'))
 
-        # NOTE: do not add random color adjustement here
+        # NOTE: do not add random color adjustment here
         adjusted = im_val_transform(adjusted)
         image = im_val_transform(image)
 
