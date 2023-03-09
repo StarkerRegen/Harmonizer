@@ -20,6 +20,8 @@ def harmonizer_iharmony4():
 def original_iharmony4():
     return OriginalIHarmony4
 
+def hyoutube():
+    return HYouTube
 
 def hyoutube():
     return HYouTube
@@ -200,7 +202,6 @@ class OriginalIHarmony4(torchtask.data_template.TaskDataset):
 
         return (adjusted, mask), (image,)
 
-
 class HYouTube(torchtask.data_template.TaskDataset):
     def __init__(self, args, is_train):
         super(HYouTube, self).__init__(args, is_train)
@@ -298,6 +299,7 @@ class HYouTube(torchtask.data_template.TaskDataset):
         adjusted = Image.fromarray((adjusted * 255.0).astype('uint8'))
         image = Image.fromarray((image * 255.0).astype('uint8'))
 
+
         # NOTE: do not add random color adjustment here
         adjusted = im_val_transform(adjusted)
         image = im_val_transform(image)
@@ -305,3 +307,4 @@ class HYouTube(torchtask.data_template.TaskDataset):
         mask = mask[None, :, :]
 
         return (adjusted, mask), (image,)
+

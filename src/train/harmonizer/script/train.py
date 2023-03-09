@@ -17,12 +17,15 @@ config = collections.OrderedDict(
         ('short_ep', False),
 
         # arguments - exp
-        ('resume', ''),
+        # ('resume', './result/train/2022-11-06_16-53-13/ckpt/checkpoint_60.ckpt'),
         ('validation', False),
 
         ('out_path', 'result'),
 
         ('visualize', False),
+
+        # ('visualize', True),
+
         ('debug', False),
 
         ('val_freq', 1),
@@ -76,7 +79,7 @@ config = collections.OrderedDict(
         ('criterions', {'model': 'harmonizer_loss'}),
 
         # arguments - task specific optimizer / lr scheduler
-        ('lr', 0.0003),
+        ('lr', 0.0001),
 
         ('milestones', [25, 50]),
         ('gamma', 0.1),

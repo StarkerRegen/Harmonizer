@@ -106,3 +106,7 @@ ENV/
 */__pycache__
 .idea/
 **/results/tmp
+**/*.jpg
+**/*.png
+**/*.mp4
+*.tgz

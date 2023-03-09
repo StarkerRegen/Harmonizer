@@ -6,6 +6,7 @@ import torchtask
 from haishoku.haishoku import Haishoku
 import numpy as np
 import math
+from torchvision import utils as vutils
 
 def func(t):
     if (t > 0.008856):
@@ -19,7 +20,7 @@ def rgb2lab(rgb):
               [0.212671, 0.715160, 0.072169],
               [0.019334, 0.119193, 0.950227]]
 
-    cie = np.dot(matrix, list(rgb))
+    cie = np.dot(matrix, list(rgb)) / 255
 
     cie[0] = cie[0] /0.950456
     cie[2] = cie[2] /1.088754
@@ -60,8 +61,12 @@ class ColorLoss(nn.Module):
         self.epsilon = epsilon
 
     def forward(self, pred, gt):
-        palette_p = Haishoku.getPalette(pred)
-        palette_g = Haishoku.getPalette(gt)
+        vutils.save_image(pred, './pred.jpg', normalize=True)
+        vutils.save_image(gt, './gt.jpg', normalize=True)
+
+        palette_p = Haishoku.getPalette('pred.jpg')
+        palette_g = Haishoku.getPalette('gt.jpg')
+
         weights = []
         labs = []
         loss = 0
@@ -74,8 +79,11 @@ class ColorLoss(nn.Module):
             weight = min(weights[i], p[0])
             l_g, a_g, b_g = rgb2lab(p[1])
             l_p, a_p, b_p = labs[i]
+
             loss = loss + math.sqrt((l_p - l_g)**2 + (a_p - a_g)**2 + (b_p - b_g)**2 + self.epsilon) * weight
+
         loss = max(loss - 1.5, 0)
+
         return loss
 
 class HarmonizerLoss(torchtask.criterion_template.TaskCriterion):
@@ -93,11 +101,12 @@ class HarmonizerLoss(torchtask.criterion_template.TaskCriterion):
         assert len(pred_outputs) == len(gt)
 
         image_losses = []
+        pre = None
         for pred_, gt_ in zip(pred_outputs, gt):
             l1_loss = torch.sum(self.l1(pred_, gt_) * mask, dim=(1, 2, 3)) / (torch.sum(mask, dim=(1, 2, 3)) + 1e-6)
             l2_loss = torch.sum(self.l2(pred_, gt_) * mask, dim=(1, 2, 3)) / (torch.sum(mask, dim=(1, 2, 3)) + 1e-6) * 10
-            color_loss = torch.sum(self.cl(pred_, gt_) * mask, dim=(1, 2, 3)) / (torch.sum(mask, dim=(1, 2, 3)) + 1e-6)
+            color_loss = torch.sum(self.cl(pred_, pre) * mask, dim=(1, 2, 3)) / (torch.sum(mask, dim=(1, 2, 3)) + 1e-6) if pre is not None else 0
             loss = 0.4 * (l1_loss + l2_loss) + 0.6 * color_loss
             image_losses.append(loss)
-
+            pre = pred_
         return image_losses
