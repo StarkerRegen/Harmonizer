@@ -18,7 +18,9 @@ class HarmonizationFunc(torchtask.func_template.TaskFunc):
 
     def metrics(self, pred_image, gt_image, mask, meters, id_str=''):
         n, c, h, w = pred_image.shape
-        
+        pred = pred_image.detach().cpu()
+        gt = gt_image.detach().cpu()
+
         assert n == 1
 
         total_pixels = h * w
@@ -40,8 +42,10 @@ class HarmonizationFunc(torchtask.func_template.TaskFunc):
         batch_psnr = skimage.metrics.peak_signal_noise_ratio(pred_image, gt_image, data_range=pred_image.max() - pred_image.min())
         meters.update('{0}_{1}_psnr'.format(id_str, self.METRIC_STR), batch_psnr)
         
-        batch_ssim = skimage.metrics.structural_similarity(pred_image, gt_image, multichannel=True)
+        batch_ssim = skimage.metrics.structural_similarity(pred_image, gt_image, channel_axis=-1)
+
         meters.update('{0}_{1}_ssim'.format(id_str, self.METRIC_STR), batch_ssim)
 
-        batch_lpips = self.loss_fn.forward(pred_image, gt_image)
+        batch_lpips = self.loss_fn.forward(pred, gt).item()
+
         meters.update('{0}_{1}_lipips'.format(id_str, self.METRIC_STR), batch_lpips)

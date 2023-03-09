@@ -59,6 +59,7 @@ class HarmonizerTrainer(torchtask.trainer_template.TaskTrainer):
 
         timer = time.time()
         for idx, (inp, gt) in enumerate(data_loader):
+
             # pre-process input tensor and ground truth tensor
             inp, gt = self._batch_prehandle(inp, gt, True)
             x, mask = inp

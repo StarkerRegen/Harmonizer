@@ -1,10 +1,12 @@
 import os
+import cv2
 import skimage
 import argparse
 import numpy as np
 from tqdm import tqdm
 from PIL import Image
 from collections import OrderedDict
+from torchvision.utils import save_image
 
 import torch
 import torch.nn.functional as F
@@ -43,7 +45,6 @@ def load_iHarmony4_subset(dataset_dir, mode):
 
     return samples
 
-
 def load_HYouTube(dataset_dir, mode):
     if not mode in ['train', 'test']:
         print('Invalid mode: {0} for the dataset: {1}'.format(mode, dataset_dir))
@@ -54,7 +55,7 @@ def load_HYouTube(dataset_dir, mode):
         sample_names = [_.strip() for _ in f.readlines()]
 
     samples = []
-    for line in sample_names:
+    for line in sorted(sample_names):
         dirs = line.split(' ')
         comp_dir = os.path.join(dataset_dir, dirs[2])
         mask_dir = os.path.join(dataset_dir, dirs[1])
@@ -71,7 +72,6 @@ def load_HYouTube(dataset_dir, mode):
             samples.append(sample)
 
     return samples
-
 
 def calc_metrics(pred, gt, mask):
     n, c, h, w = pred.shape
@@ -115,6 +115,7 @@ if __name__ == '__main__':
     parser.add_argument('--pretrained', type=str, default='./pretrained/harmonizer.pth', help='')
     parser.add_argument('--datasets', type=str, nargs='+', required=True, choices=DATASETS.keys(), help='')
     parser.add_argument('--metric-size', type=int, default=0, help='')
+    parser.add_argument('--visualization', type=bool, default=False, help='')
     args = parser.parse_known_args()[0]
 
     # pre-process the required arguments
@@ -126,13 +127,16 @@ if __name__ == '__main__':
     print('Evaluation Harmonizer:')
     print('  - Pretrained Model: {0}'.format(args.pretrained))
     print('  - Validation Datasets: {0}'.format(args.datasets))
+    print('  - Visualization: {0}'.format(args.visualization))
     print('  - Metric Calculation Size: {0}'.format(metric_size if args.metric_size > 0 else 'original'))
 
     # create/load the harmonizer model
     harmonizer = model.Harmonizer()
     if cuda:
         harmonizer = harmonizer.cuda()
-    ckpt = torch.load(args.pretrained, map_location=torch.device('cpu'))
+
+    # ckpt = torch.load(args.pretrained, map_location=torch.device('cpu'))
+    ckpt = torch.load(args.pretrained)
     new_state_dict = OrderedDict()
     for k, v in ckpt['model'].items():
         name = k[13:]  # remove module.model.
@@ -185,6 +189,17 @@ if __name__ == '__main__':
             with torch.no_grad():
                 _harmonized = harmonizer.restore_image(_comp, _mask, arguments)[-1]
 
+            # visualize
+            if args.visualization and i < 1000:
+                img = np.concatenate((comp, image), axis=1)
+                img = cv2.resize(img, (768, 256))
+                img_out = cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
+                cv2.imwrite('../autodl-tmp/results/harmonized'+'in'+str(i)+'.png',img_out)
+                save_image(_harmonized, '../autodl-tmp/results/harmonized'+'out'+str(i)+'.png')
+
+            if i == 1000:
+                exit()
+
             # calculate metrics
             mse, fmse, psnr, ssim = calc_metrics(_harmonized, _image, _mask)
 
@@ -214,3 +229,4 @@ if __name__ == '__main__':
     print('All - MSE: {0:.4f}   fMSE: {1:.4f}   PSNR: {2:.4f}   SSIM: {3:.4f}'.format(mse, fmse, psnr, ssim))
     print('================================================================================')
     print('\n')
+

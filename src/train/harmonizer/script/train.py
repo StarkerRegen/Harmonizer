@@ -20,7 +20,7 @@ config = collections.OrderedDict(
         # ('resume', './result/train/2022-11-06_16-53-13/ckpt/checkpoint_60.ckpt'),
         ('validation', False),
 
-        ('out_path', 'result'),
+        ('out_path', '../../../../autodl-tmp/result'),
 
         ('visualize', False),
 
